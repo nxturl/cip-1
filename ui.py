@@ -158,6 +158,7 @@ def dummy_clean_json(text):
 # json.dump(valid_documents, open("./valid_documents.json", "w"), indent=4)
 valid_documents = json.load(open("./valid_documents.json", "r"))
 for data in valid_documents:
+    st.write(data["chunk_url"])
     st.write(data["meeting_id"])
     st.write(data["index"])
     st.write(data["municipality"])
