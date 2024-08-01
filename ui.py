@@ -1,98 +1,176 @@
-import requests
+import glob
+import json
+import os
+from collections import Counter, defaultdict
+from typing import List, Text
+from xml.dom.minidom import Document
+
+import pandas as pd
 import streamlit as st
+from altair import value
+from bson import has_c
 
-HOST = "http://localhost:8000"
-
-
-def send_message(session_id, message):
-    response = requests.post(
-        f"{HOST}/chat", json={"session_id": session_id, "message": message}
-    )
-    return response.json()
+# files = glob.glob("./ml/data/tmp_insights/*")
+# counter = Counter()
+# _data_ = {}
 
 
-def visualize(history):
-    turns = history["turns"]
-    for idx in range(len(turns) + 1):
-        if idx == len(turns):
-            if "new_user_input" not in st.session_state:
-                st.session_state.new_user_input = ""
-
-            st.text_area(
-                "User : ",
-                value=st.session_state.new_user_input,
-                height=1,
-                max_chars=1000,
-                key="new_user_input",
-                help=None,
-                on_change=None,
-                args=None,
-                kwargs=None,
-                placeholder="Enter your query here",
-                disabled=False,
-                label_visibility="visible",
-            )
-        else:
-            event = turns[idx]
-            if not event["is_visible"]:
-                continue
-            if event["role"] == "user":
-                st.text_input(
-                    "User : ",
-                    value=event["content"],
-                    # height=1,
-                    # max_chars=1000,
-                    key=idx,
-                    help=None,
-                    on_change=None,
-                    args=None,
-                    kwargs=None,
-                    placeholder="Enter your query here",
-                    disabled=True,
-                    label_visibility="visible",
-                )
-            elif event["role"] in ["assistant", "system", "context"]:
-                st.write(f"**Civic** : ")
-                st.markdown(event["content"])
-                st.write("---")
+def add_query_to_url(url: Text, query: Text) -> Text:
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{query}"
 
 
-st.title("GatherGov")
+def add_timestamp_to_url(url: Text, start: float) -> Text:
+
+    if "youtube" not in url:
+        start = start / 1000
+
+    start = int(start)
+    if "granicus.com" in url:
+        return add_query_to_url(url, f"entrytime={start}")
+
+    if "youtube.com" in url:
+        return add_query_to_url(url, f"t={start}s")
+
+    if "swagit.com" in url:
+        return add_query_to_url(url, f"ts={start}")
+
+    if "opengovideo.com" in url:
+        if "iCurrentPosition" in url:
+            return re.sub(r"iCurrentPosition=\d+", f"iCurrentPosition={start}", url)
+        return add_query_to_url(url, f"iCurrentPosition={start}")
+
+    return url
 
 
-chat_sessions = requests.get(f"{HOST}/get_sessions").json()
-if not chat_sessions:
-    session_id = requests.get(f"{HOST}/create_session").json()
-    chat_sessions = [{"session_id": session_id}]
-    st.experimental_rerun()
+# for file in files:
+#     data = json.load(open(file))
+#     insight = data["insights"]
+#     _data_[data["meeting_id"]] = (
+#         data["municipality"],
+#         data["date"],
+#         data["title"],
+#         data["source"],
+#         data["meeting_id"],
+#     )
+#     id_idx = [
+#         ("62487cba-7ed9-4a20-9ebb-b20d8fd5cedb", 1),
+#         ("bE7WGmAwfnY", 2),
+#         ("x6HgyvqbPgI", 1),
+#         ("q7Jr2-ioV1E", 7),
+#         ("q7Jr2-ioV1E", 8),
+#         ("siQxuLxaO3E", 8),
+#         ("w9pv0sxKZd4", 8),
+#     ]
+#     if (data["meeting_id"], data["index"]) in id_idx:
+#         st.write(
+#             data["meeting_id"],
+#             data["index"],
+#             data["source"],
+#             data["title"],
+#             data["date"],
+#         )
+#         # st.markdown(data["text"])
+#         # st.write("---")
+#         st.write(data["insights"])
+#         st.write("\n\n\n")
+#         st.write("---")
+#         chunk_link = add_timestamp_to_url(data["source"], data["start"])
+#         st.write(f"Link to the chunk = {chunk_link}")
+#         st.write("---")
+#         st.write(data["text"])
+
+#         st.write("---")
+#         st.write("---")
+#         st.write("---")
+
+# # st.dataframe(
+# #     pd.DataFrame(
+# #         list(_data_.values()),
+# #         columns=["Municipality", "Date", "Title", "Source", "meeting_id"],
+# #     )
+# # )
 
 
-# get the session
-session_id = st.sidebar.selectbox(
-    "Select a chat session",
-    [session["session_id"] for session in chat_sessions],
-)
+# # completed meetings
+# files = glob.glob("./ml/data/tmp_transcripts/*.json")
+# completed_ids = [os.path.basename(x).replace(".json", "") for x in files]
+
+# # keyword mentions of chunks
+# transcripts = []
+# for file in files:
+#     transcript = json.load(open(file))
+#     sentences = transcript["sentences"]
+#     text = " ".join([x["text"] for x in sentences]).lower()
+#     if "battery" in text or "lithium" in text:
+#         transcripts.append(transcript)
+
+# transcripts = json.load(open("./battery_or_litium_meetings.json", "r"))
+
+# for transcript in transcripts:
+#     st.write(transcript["meeting_id"])
+#     st.write(transcript["title"])
+#     st.write(transcript["date"])
+#     st.write(transcript["source"])
+#     st.write(transcript["municipality"])
+#     st.write("\n\n\n")
+#     st.write(" ".join([x["text"] for x in transcript["sentences"]]))
+#     st.write("---")
+#     st.write("\n\n\n")
 
 
-new_session = st.sidebar.button("Create new session")
-if new_session:
-    session_id = requests.get(f"{HOST}/create_session").json()
-    st.experimental_rerun()
+def dummy_clean_json(text):
+    new_text = text.replace("```%json", "").replace("```json", "").replace("```", "")
+    return new_text
 
-history = requests.get(f"{HOST}/chat_history/{session_id}").json()
 
-visualize(history)
+# files = glob.glob("./ml/data/tmp_insights_extended/*.json")
 
-*_, send_column = st.columns(8)
-with send_column:
-    send_button = st.button(" Send", key="send", type="primary")
-if send_button:
-    user_input = st.session_state.new_user_input
-    print(f"getting response for {user_input} with {session_id}")
-    if user_input:
-        history = send_message(session_id, user_input)
-        if history:
-            del st.session_state.new_user_input
-            st.experimental_rerun()
-    else:
-        st.warning("Enter some text to get reply...")
+# valid_documents = []
+
+# for file in files:
+#     data = json.load(open(file))
+#     has_crapped = False
+#     has_value = False
+#     try:
+#         insight = json.loads(dummy_clean_json(data["insights"]))
+#         for key, value in insight.items():
+#             if value:
+#                 has_value = True
+#                 break
+#     except:
+#         has_crapped = True
+#         insight = data["insights"]
+#         has_value = True
+
+#     if has_value:  # and data["municipality"] != "OregonDOE":
+#         data["chunk_url"] = add_timestamp_to_url(data["source"], data["start"])
+#         valid_documents.append(data)
+#         # st.write(file)
+#         # st.write(data["meeting_id"])
+#         # st.write(data["index"])
+#         # st.write(data["municipality"])
+#         # st.write(data["date"])
+#         # st.write(data["title"])
+#         # st.write(add_timestamp_to_url(data["source"], data["start"]))
+#         # st.write(has_crapped)
+#         # st.write(insight)
+#         # st.write(data["text"])
+#         # st.write("---")
+
+
+# json.dump(valid_documents, open("./valid_documents.json", "w"), indent=4)
+valid_documents = json.load(open("./valid_documents.json", "r"))
+for data in valid_documents:
+    st.write(data["meeting_id"])
+    st.write(data["index"])
+    st.write(data["municipality"])
+    st.write(data["date"])
+    st.write(data["title"])
+    st.write(add_timestamp_to_url(data["source"], data["start"]))
+    try:
+        st.write(json.loads(dummy_clean_json(data["insights"])))
+    except:
+        st.write(data["insights"])
+    st.write(data["text"])
+    st.write("---")
