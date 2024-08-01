@@ -3,12 +3,8 @@ import json
 import os
 from collections import Counter, defaultdict
 from typing import List, Text
-from xml.dom.minidom import Document
 
-import pandas as pd
 import streamlit as st
-from altair import value
-from bson import has_c
 
 # files = glob.glob("./ml/data/tmp_insights/*")
 # counter = Counter()
