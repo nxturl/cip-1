@@ -120,7 +120,7 @@ def dummy_clean_json(text):
     return new_text
 
 
-# files = glob.glob("./ml/data/tmp_total_insights/*.json")
+# files = glob.glob("./ml/data/v2_insights/*.json")
 
 # valid_documents = []
 
@@ -155,39 +155,46 @@ def dummy_clean_json(text):
 #         # st.write("---")
 
 
-# # json.dump(valid_documents, open("./valid_documents_total.json", "w"), indent=4)
+# json.dump(valid_documents, open("./v2_valid_documents_total.json", "w"), indent=4)
 
-# # st.write(len(valid_documents))
+# st.write(len(valid_documents))
 
-# valid_documents = json.load(open("./valid_documents_total.json", "r"))
-# counter = 0
-# for i in range(0, len(valid_documents), 300):
-#     tmp_data = valid_documents[i : i + 300]
-#     json.dump(
-#         tmp_data, open(f"./valid_documents_total_bucket_{counter}.json", "w"), indent=4
-#     )
-#     counter += 1
+# # valid_documents = json.load(open("./valid_documents_total.json", "r"))
+# # counter = 0
+# # for i in range(0, len(valid_documents), 300):
+# #     tmp_data = valid_documents[i : i + 300]
+# #     json.dump(
+# #         tmp_data, open(f"./valid_documents_total_bucket_{counter}.json", "w"), indent=4
+# #     )
+# #     counter += 1
 
-files = glob.glob("./valid_documents_total_bucket_*.json")
-buckets = [f"bucket_{i}" for i in range(len(files))]
+# files = glob.glob("./valid_documents_total_bucket_*.json")
+# buckets = [f"bucket_{i}" for i in range(len(files))]
 
-bucket_id = st.sidebar.selectbox(
-    "Select a bucket of documents to view",
-    buckets,
-)
+# bucket_id = st.sidebar.selectbox(
+#     "Select a bucket of documents to view",
+#     buckets,
+# )
 
-# Extract the number from the bucket_id
-idx = int(bucket_id.split("_")[1])
+# # Extract the number from the bucket_id
+# idx = int(bucket_id.split("_")[1])
 
-file = files[idx]
-st.write(idx, files[idx])
+# file = files[idx]
+
+# st.write(idx, files[idx])
+
+file = "./v2_valid_documents_total.json"
 
 with open(file, "r") as f:
     valid_documents = json.load(f)
 
+counter = 0
 for data in valid_documents:
     if "2022" in data["date"]:
+        counter += 1
         continue
+    # if data["municipality"] == "OregonDOE":
+    #     continue
     # st.write(data["chunk_url"])
     st.write(data["meeting_id"])
     st.write(data["index"])
@@ -201,3 +208,5 @@ for data in valid_documents:
         st.write(data["insights"])
     st.write(data["text"])
     st.write("---")
+
+# print(counter)
