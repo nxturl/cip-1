@@ -186,6 +186,8 @@ with open(file, "r") as f:
     valid_documents = json.load(f)
 
 for data in valid_documents:
+    if "2022" in data["date"]:
+        continue
     # st.write(data["chunk_url"])
     st.write(data["meeting_id"])
     st.write(data["index"])
