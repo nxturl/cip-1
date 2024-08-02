@@ -120,7 +120,7 @@ def dummy_clean_json(text):
     return new_text
 
 
-# files = glob.glob("./ml/data/tmp_insights_extended/*.json")
+# files = glob.glob("./ml/data/tmp_total_insights/*.json")
 
 # valid_documents = []
 
@@ -137,7 +137,7 @@ def dummy_clean_json(text):
 #     except:
 #         has_crapped = True
 #         insight = data["insights"]
-#         has_value = True
+#         # has_value = True
 
 #     if has_value:  # and data["municipality"] != "OregonDOE":
 #         data["chunk_url"] = add_timestamp_to_url(data["source"], data["start"])
@@ -155,10 +155,38 @@ def dummy_clean_json(text):
 #         # st.write("---")
 
 
-# json.dump(valid_documents, open("./valid_documents.json", "w"), indent=4)
-valid_documents = json.load(open("./valid_documents.json", "r"))
+# # json.dump(valid_documents, open("./valid_documents_total.json", "w"), indent=4)
+
+# # st.write(len(valid_documents))
+
+# valid_documents = json.load(open("./valid_documents_total.json", "r"))
+# counter = 0
+# for i in range(0, len(valid_documents), 300):
+#     tmp_data = valid_documents[i : i + 300]
+#     json.dump(
+#         tmp_data, open(f"./valid_documents_total_bucket_{counter}.json", "w"), indent=4
+#     )
+#     counter += 1
+
+files = glob.glob("./valid_documents_total_bucket_*.json")
+buckets = [f"bucket_{i}" for i in range(len(files))]
+
+bucket_id = st.sidebar.selectbox(
+    "Select a bucket of documents to view",
+    buckets,
+)
+
+# Extract the number from the bucket_id
+idx = int(bucket_id.split("_")[1])
+
+file = files[idx]
+st.write(idx, files[idx])
+
+with open(file, "r") as f:
+    valid_documents = json.load(f)
+
 for data in valid_documents:
-    st.write(data["chunk_url"])
+    # st.write(data["chunk_url"])
     st.write(data["meeting_id"])
     st.write(data["index"])
     st.write(data["municipality"])
